@@ -14,7 +14,11 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=20261127-0030">
+  <!-- High Performance Asset Preloads -->
+  <link rel="preload" as="image" href="1.jpg">
+  <link rel="preload" as="image" href="gallery-0.png">
+  <link rel="preload" as="image" href="gallery-8.png">
+  <link rel="stylesheet" href="style.css?v=20261127-0115">
 </head>
 <body>
 
@@ -51,7 +55,7 @@
     <div class="flyer-wrapper">
       <div class="flyer-card">
         <!-- Base Poster Image -->
-        <img src="./1.jpg" alt="Dr. Gnanvatsaldas Swami - Inspirational Speaker in Bangkok" class="flyer-img" id="flyer-img">
+        <img src="1.jpg" alt="Dr. Gnanvatsaldas Swami - Inspirational Speaker in Bangkok" class="flyer-img" id="flyer-img">
 
         <!-- Overlay elements -->
         <div class="flyer-overlay">
@@ -89,40 +93,46 @@
        ====================================================================== -->
   <section class="gallery-wrapper" id="gallery-section">
     <div class="gallery" id="gallery">
-      <!-- Column 1 (8 Seamless Cycling Cards) -->
+      <!-- Column 1 (10 Seamless Cycling Cards) -->
       <div class="column" id="gallery-col-0">
-        <div class="image-card squircle-card"><img src="./images/gallery-8.png" alt="From Burnout to Balance" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-3.png" alt="Pujya Dr. Gnanvatsaldas Swami" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-1.png" alt="Inspirational Discourse" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-5.png" alt="Discourse Atmosphere" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-4.png" alt="Keynote Address" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-2.png" alt="Daily Wisdom" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-8.png" alt="From Burnout to Balance" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-3.png" alt="Pujya Dr. Gnanvatsaldas Swami" loading="lazy"></div>
+        <div class="image-card squircle-card"><img src="gallery-8.png" alt="From Burnout to Balance" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-3.png" alt="Pujya Dr. Gnanvatsaldas Swami" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-1.png" alt="Inspirational Discourse" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-5.png" alt="Discourse Atmosphere" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-4.png" alt="Keynote Address" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-2.png" alt="Daily Wisdom" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-8.png" alt="From Burnout to Balance" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-3.png" alt="Pujya Dr. Gnanvatsaldas Swami" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-1.png" alt="Inspirational Discourse" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-5.png" alt="Discourse Atmosphere" loading="eager" decoding="async"></div>
       </div>
 
-      <!-- Column 2 (8 Seamless Cycling Cards) -->
+      <!-- Column 2 (10 Seamless Cycling Cards) -->
       <div class="column" id="gallery-col-1">
-        <div class="image-card squircle-card"><img src="./images/gallery-2.png" alt="Daily Wisdom" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-0.png" alt="Think Different" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-7.png" alt="BAPS Thailand Community" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-6.png" alt="Dr. Gnanvatsaldas Swami in Bangkok" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-8.png" alt="From Burnout to Balance" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-3.png" alt="Pujya Dr. Gnanvatsaldas Swami" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-2.png" alt="Daily Wisdom" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-0.png" alt="Think Different" loading="lazy"></div>
+        <div class="image-card squircle-card"><img src="gallery-2.png" alt="Daily Wisdom" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-0.png" alt="Think Different" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-7.png" alt="BAPS Thailand Community" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-6.png" alt="Dr. Gnanvatsaldas Swami in Bangkok" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-8.png" alt="From Burnout to Balance" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-3.png" alt="Pujya Dr. Gnanvatsaldas Swami" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-2.png" alt="Daily Wisdom" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-0.png" alt="Think Different" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-7.png" alt="BAPS Thailand Community" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-6.png" alt="Dr. Gnanvatsaldas Swami in Bangkok" loading="eager" decoding="async"></div>
       </div>
 
-      <!-- Column 3 (8 Seamless Cycling Cards) -->
+      <!-- Column 3 (10 Seamless Cycling Cards) -->
       <div class="column" id="gallery-col-2">
-        <div class="image-card squircle-card"><img src="./images/gallery-6.png" alt="Dr. Gnanvatsaldas Swami in Bangkok" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-4.png" alt="Keynote Address" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-7.png" alt="BAPS Thailand Gathering" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-1.png" alt="Inspirational Discourse" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-5.png" alt="Audience and Atmosphere" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-0.png" alt="Think Different" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-6.png" alt="Dr. Gnanvatsaldas Swami in Bangkok" loading="lazy"></div>
-        <div class="image-card squircle-card"><img src="./images/gallery-4.png" alt="Keynote Address" loading="lazy"></div>
+        <div class="image-card squircle-card"><img src="gallery-6.png" alt="Dr. Gnanvatsaldas Swami in Bangkok" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-4.png" alt="Keynote Address" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-7.png" alt="BAPS Thailand Gathering" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-1.png" alt="Inspirational Discourse" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-5.png" alt="Audience and Atmosphere" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-0.png" alt="Think Different" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-6.png" alt="Dr. Gnanvatsaldas Swami in Bangkok" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-4.png" alt="Keynote Address" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-7.png" alt="BAPS Thailand Gathering" loading="eager" decoding="async"></div>
+        <div class="image-card squircle-card"><img src="gallery-1.png" alt="Inspirational Discourse" loading="eager" decoding="async"></div>
       </div>
     </div>
   </section>
@@ -150,7 +160,7 @@
             <div class="card-left-col">
               <div class="card-heading-group">
                 <p class="card-eyebrow">SCHEDULE & COUNTDOWN</p>
-                <h2 class="card-title">Sunday, 13 Dec 2026</h2>
+                <h2 class="card-title" id="eventDateDisplay">Sunday, 13 Dec 2026</h2>
                 <div class="card-time-row">
                   <svg class="calendar-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -158,7 +168,7 @@
                     <line x1="8" y1="2" x2="8" y2="6"></line>
                     <line x1="3" y1="10" x2="21" y2="10"></line>
                   </svg>
-                  <span>5:30 PM ICT Doors Open at 5:00 PM</span>
+                  <span id="eventTimeDisplay">5:30 PM ICT Doors Open at 5:00 PM</span>
                 </div>
               </div>
 
@@ -225,8 +235,8 @@
                 </button>
               </div>
 
-              <h3 class="venue-name">The Tio Chew Association of Thailand</h3>
-              <p class="venue-address">
+              <h3 class="venue-name" id="venueNameDisplay">The Tio Chew Association of Thailand</h3>
+              <p class="venue-address" id="venueAddressDisplay">
                 No. 1, Chan Road, Soi Yenchit 12, Thung Wat Don, Sathorn, Bangkok 10120, Thailand
               </p>
 
@@ -440,6 +450,10 @@
                   <div class="pass-row">
                     <span class="pass-label">Group Pass ID</span>
                     <span class="pass-val pass-id" id="confirmedPassId">GS-2026-8842</span>
+                  </div>
+                  <div class="pass-row">
+                    <span class="pass-label">Contact Mobile</span>
+                    <span class="pass-val" id="confirmedPhone">+66 81 234 5678</span>
                   </div>
                   <div class="pass-row">
                     <span class="pass-label">Total Reserved</span>
@@ -725,6 +739,6 @@
   <script src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js"></script>
   <script>window.opentype || document.write('<script src="./opentype.min.js"><\/script>')</script>
-  <script src="script.js?v=20261127-0030"></script>
+  <script src="script.js?v=20261127-0115"></script>
 </body>
 </html>

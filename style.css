@@ -1748,6 +1748,32 @@ html.lenis body {
    Mobile-Specific Tweaks
    ========================================================================== */
 @media (max-width: 768px) {
+  /* Gallery responsiveness on mobile (prevent white space & gaps) */
+  .gallery {
+    height: clamp(480px, 72vh, 600px);
+    padding: 10px 8px;
+    gap: 8px;
+  }
+  .column:nth-child(1) { top: -40px; }
+  .column:nth-child(2) { top: -60px; }
+  .column:nth-child(3) { top: -40px; }
+
+  /* Ensure Pass Ticket is full width on mobile with actions stacked cleanly below */
+  .reg-success {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+  .pass-card {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .success-actions {
+    width: 100% !important;
+    margin-top: 16px !important;
+  }
+
   .flip-stack-stage {
     max-width: 100%;
     height: calc(100svh - 40px);

@@ -12,6 +12,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+
+  const APPS_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzW9p8KaS4nWM_NjyV1ZCwsbBqEsVJQuc3WCtMol9C77pFZXWMFYS7dRWfhGnQwaPiF/exec";
   // =========================================================================
   // 1. Lenis Smooth Scrolling Initialization
   // =========================================================================
@@ -562,7 +564,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // =========================================================================
-  // 5. Rock-Solid Live Direct Tabular Countdown Timer (Card 0)
+  // 5. Live Google Sheets Synced Countdown Timer & Event Details (Card 0)
   // =========================================================================
   let targetTimestamp = new Date('2026-12-13T17:30:00+07:00').getTime();
   if (targetTimestamp - Date.now() <= 0) {
@@ -597,6 +599,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateCountdown();
   setInterval(updateCountdown, 1000);
+
+  // Apply Live Event Settings & Countdown Target from Google Sheets
+  function applyEventSettings(res) {
+    if (!res || !res.success) return;
+
+    if (res.eventDate) {
+      const dateEl = document.getElementById('eventDateDisplay');
+      if (dateEl) dateEl.textContent = res.eventDate;
+    }
+
+    if (res.startTime || res.doorsOpen) {
+      const timeEl = document.getElementById('eventTimeDisplay');
+      if (timeEl) {
+        const doors = res.doorsOpen ? ` Doors Open at ${res.doorsOpen}` : '';
+        timeEl.textContent = `${res.startTime || '5:30 PM'} ICT${doors}`;
+      }
+    }
+
+    if (res.venueName) {
+      const vNameEl = document.getElementById('venueNameDisplay');
+      if (vNameEl) vNameEl.textContent = res.venueName;
+    }
+
+    if (res.venueAddress) {
+      const vAddrEl = document.getElementById('venueAddressDisplay');
+      if (vAddrEl) vAddrEl.textContent = res.venueAddress;
+    }
+
+    if (res.countdownTarget) {
+      const parsed = new Date(res.countdownTarget).getTime();
+      if (!isNaN(parsed) && parsed > 0) {
+        targetTimestamp = parsed;
+        updateCountdown();
+      }
+    }
+  }
+
+  // Fetch live settings on page load
+  if (APPS_SCRIPT_WEB_APP_URL) {
+    fetch(APPS_SCRIPT_WEB_APP_URL + "?action=getSettings")
+      .then(res => res.json())
+      .then(data => applyEventSettings(data))
+      .catch(err => console.log("Using default event settings:", err));
+  }
 
 
   // =========================================================================
@@ -672,7 +718,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 7. Registration Form Management & Google Sheets Connection (Card 1)
   // Architecture identical to Kids Diwali with Adults + Children split
   // =========================================================================
-  const APPS_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzW9p8KaS4nWM_NjyV1ZCwsbBqEsVJQuc3WCtMol9C77pFZXWMFYS7dRWfhGnQwaPiF/exec";
 
   // Stepper Elements & Container References
   const form = document.getElementById('registration-form');
@@ -969,10 +1014,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const randNum = Math.floor(1000 + Math.random() * 9000);
       const groupRegId = `GS-${mmdd}-${randNum}`;
 
+      const rawUserPhone = phoneInput.value.trim();
+      const displayPhone = `${countryCode} ${rawUserPhone}`;
+      const sheetSafePrimaryPhone = displayPhone.startsWith("'") ? displayPhone : `'${displayPhone}`;
+
       const primaryAttendee = {
         name: nameInput.value.trim(),
         gender: primaryGender,
-        phone: `${countryCode} ${phoneInput.value.trim()}`,
+        phone: displayPhone,
         email: emailInput.value.trim(),
         role: 'Primary Registrant',
         badgeId: `${groupRegId}-A1`
@@ -1002,11 +1051,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const payload = {
         action: "register",
         parentName: primaryAttendee.name,
-        whatsappNumber: primaryAttendee.phone,
+        whatsappNumber: sheetSafePrimaryPhone,
         parentEmail: primaryAttendee.email,
         primaryGender: primaryAttendee.gender,
         regId: groupRegId,
-        adults: additionalAdults,
+        adults: additionalAdults.map(a => ({
+          name: a.name,
+          gender: a.gender,
+          phone: a.phone ? (a.phone.startsWith("'") ? a.phone : `'${a.phone}`) : '',
+          email: a.email || ''
+        })),
         children: children,
         totalSeats: allAttendees.length,
         termsVersion: "v1.0 (2026-11-26)",
@@ -1028,6 +1082,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('confirmedName').textContent = primaryAttendee.name;
         document.getElementById('confirmedPassId').textContent = groupRegId;
+        const confirmedPhoneEl = document.getElementById('confirmedPhone');
+        if (confirmedPhoneEl) confirmedPhoneEl.textContent = primaryAttendee.phone;
         document.getElementById('confirmedSeats').textContent = `${allAttendees.length} ${allAttendees.length === 1 ? 'Seat' : 'Seats'} Reserved`;
 
         const manifestCount = document.getElementById('manifestCountLabel');
