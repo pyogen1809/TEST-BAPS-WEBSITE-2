@@ -672,7 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 7. Registration Form Management & Google Sheets Connection (Card 1)
   // Architecture identical to Kids Diwali with Adults + Children split
   // =========================================================================
-  const APPS_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwyTQqhszqHEYJeBF07zg7m9DNZyvFJiXC14Ifx_uWSGesojNAIMwdnSrZ2IN96LHHd/exec";
+  const APPS_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzW9p8KaS4nWM_NjyV1ZCwsbBqEsVJQuc3WCtMol9C77pFZXWMFYS7dRWfhGnQwaPiF/exec";
 
   // Stepper Elements & Container References
   const form = document.getElementById('registration-form');
