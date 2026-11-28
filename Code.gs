@@ -1127,24 +1127,18 @@ function fixPhoneNumberFormulaErrors() {
     // Column G (Index 6) is Attendee Phone Number
     const fG = formulas[r][6];
     const vG = values[r][6];
-    if (fG && (fG.startsWith("=+") || fG.startsWith("="))) {
-      const clean = "'" + fG.replace(/^=/, "");
-      rawSheet.getRange(r + 2, 7).setNumberFormat("@").setValue(clean);
-      fixCount++;
-    } else if (typeof vG === "string" && vG.startsWith("+") && !vG.startsWith("'+")) {
-      rawSheet.getRange(r + 2, 7).setNumberFormat("@").setValue("'" + vG);
+    const cleanG = cleanPhoneEntry(fG, vG);
+    if (cleanG && cleanG !== vG) {
+      rawSheet.getRange(r + 2, 7).setNumberFormat("@").setValue(cleanG);
       fixCount++;
     }
 
     // Column J (Index 9) is Primary Phone
     const fJ = formulas[r][9];
     const vJ = values[r][9];
-    if (fJ && (fJ.startsWith("=+") || fJ.startsWith("="))) {
-      const clean = "'" + fJ.replace(/^=/, "");
-      rawSheet.getRange(r + 2, 10).setNumberFormat("@").setValue(clean);
-      fixCount++;
-    } else if (typeof vJ === "string" && vJ.startsWith("+") && !vJ.startsWith("'+")) {
-      rawSheet.getRange(r + 2, 10).setNumberFormat("@").setValue("'" + vJ);
+    const cleanJ = cleanPhoneEntry(fJ, vJ);
+    if (cleanJ && cleanJ !== vJ) {
+      rawSheet.getRange(r + 2, 10).setNumberFormat("@").setValue(cleanJ);
       fixCount++;
     }
   }
@@ -1157,6 +1151,19 @@ function fixPhoneNumberFormulaErrors() {
   refreshAllTabsFromRaw();
 
   showAlertSafe("Repaired " + fixCount + " phone number cells. All category tabs have been refreshed and synchronized!");
+}
+
+function cleanPhoneEntry(formulaVal, cellVal) {
+  let str = "";
+  if (formulaVal && typeof formulaVal === "string" && formulaVal.trim().length > 0) {
+    str = formulaVal.trim();
+  } else if (cellVal && typeof cellVal === "string" && cellVal.trim() !== "#ERROR!") {
+    str = cellVal.trim();
+  }
+  if (!str) return "";
+  str = str.replace(/^['=+\s]+/, "").trim();
+  if (!str || str.toLowerCase().includes("error")) return "";
+  return "'+" + str;
 }
 
 /**

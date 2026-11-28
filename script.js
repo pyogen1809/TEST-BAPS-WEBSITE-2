@@ -435,11 +435,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { passive: true });
 
   window.addEventListener('touchmove', (e) => {
-    // 1. If user is locked on Hero Flyer, block manual touch scrolling down:
+    // 1. If user is locked on Hero Flyer, handle touch gestures:
     if (!hasTransitioned) {
       const currentY = e.touches[0].clientY;
       const diffY = touchStartY - currentY; // positive = swipe up (scroll down)
-      if (diffY > 0) {
+      if (diffY > 55) {
+        // Deliberate upward swipe: trigger the register glide directly!
+        e.preventDefault();
+        const flyerBtn = document.getElementById('flyer-register-btn');
+        if (flyerBtn) flyerBtn.click();
+      } else if (diffY > 10) {
+        // Slight gesture: gently nudge the button to show where to tap
         e.preventDefault();
         nudgeRegisterButton();
       }
@@ -1297,8 +1303,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         form.style.display = 'none';
+        const formTopMeta = document.querySelector('.form-top-meta');
+        if (formTopMeta) formTopMeta.style.display = 'none';
         regSuccess.classList.add('is-visible');
         regSuccess.style.setProperty('display', 'flex', 'important');
+        const formCardInner = document.getElementById('registration-form-card');
+        if (formCardInner) formCardInner.scrollTop = 0;
 
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -1323,6 +1333,8 @@ document.addEventListener('DOMContentLoaded', () => {
       childCount = 0;
       const formHeadingGroup = document.querySelector('.form-heading-group');
       if (formHeadingGroup) formHeadingGroup.style.display = 'block';
+      const formTopMeta = document.querySelector('.form-top-meta');
+      if (formTopMeta) formTopMeta.style.display = '';
       regSuccess.classList.remove('is-visible');
       regSuccess.style.setProperty('display', 'none', 'important');
       form.style.display = 'flex';
