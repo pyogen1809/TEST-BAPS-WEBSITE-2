@@ -19,31 +19,47 @@
 // 13. Workspace (Free scratchpad tab for coordinator notes, tasks & calculations)
 // ============================================================================
 
-const DEFAULT_EVENT_NAME = "From Burnout to Balance - Pujya Dr. Gyanvatsal Swami";
+const DEFAULT_EVENT_NAME = "Pujya Dr. Gyanvatsal Swami in Bangkok";
 const DEFAULT_EVENT_DATE = "Sunday, 13 December 2026";
 const DEFAULT_START_TIME = "5:30 PM";
 const DEFAULT_DOORS_OPEN = "5:00 PM";
 const DEFAULT_VENUE = "The Tio Chew Association of Thailand, Bangkok";
 const DEFAULT_VENUE_ADDRESS = "No. 1, Chan Road, Soi Yenchit 12, Thung Wat Don, Sathorn, Bangkok 10120";
 const DEFAULT_COUNTDOWN_ISO = "2026-12-13T17:30:00+07:00";
-const OFFICIAL_EMAIL = "baps.bangkok@gmail.com";
+const OFFICIAL_EMAIL = "pyogen1809@gmail.com";
 
 /**
  * 1. Custom Admin Menu added to Google Sheets UI
  */
 function onOpen() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss.getSheetByName("Event_Settings") || !ss.getSheetByName("Broadcasts") || !ss.getSheetByName("Workspace")) {
+      setupAllTabs(ss);
+    }
+  } catch (eInit) {}
+
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('🕉️ BAPS Event Admin')
-    .addItem('🛠️ Auto-Fix Phone Number #ERROR! in Sheet', 'fixPhoneNumberFormulaErrors')
+    .addItem('⚙️ Initialize All 13 Tabs (Event_Settings, Broadcasts, Workspace)', 'setupAllTabs')
     .addSeparator()
     .addItem('📨 Send Pending Broadcasts', 'sendPendingBroadcasts')
     .addItem('🧪 Send Test Broadcast Email', 'testSendBroadcastEmail')
     .addSeparator()
-    .addItem('⚙️ Initialize / Format All Sheets', 'setupAllTabs')
+    .addItem('🛠️ Auto-Fix Phone Number #ERROR! in Sheet', 'fixPhoneNumberFormulaErrors')
     .addItem('🔄 Refresh All Tabs from Raw_Responses', 'refreshAllTabsFromRaw')
     .addSeparator()
     .addItem('📊 View Event Attendance Statistics', 'showAttendanceStats')
     .addToUi();
+}
+
+/**
+ * Legacy cron trigger compatibility stub.
+ * Prevents Google Apps Script failure notification emails if an old time-based trigger is active.
+ */
+function cronAdjustSchedule() {
+  Logger.log("cronAdjustSchedule executed cleanly at " + new Date().toISOString());
+  return { success: true };
 }
 
 /**
@@ -72,6 +88,26 @@ function doPost(e) {
  */
 function doGet(e) {
   try {
+    // Unsubscribe action handler
+    if (e && e.parameter && e.parameter.action === 'unsubscribe') {
+      const email = (e.parameter.email || "").toString().trim();
+      const outputHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Unsubscribed</title></head>
+        <body style="font-family: -apple-system, sans-serif; background: #0A0B0D; color: #FFFFFF; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px;">
+          <div style="max-width: 440px; background: #16181D; border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; padding: 32px 24px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div style="font-size: 32px; color: #10B981; margin-bottom: 12px;">&#10003;</div>
+            <h2 style="margin: 0 0 10px; font-size: 20px; color: #FFFFFF;">Unsubscribed Successfully</h2>
+            <p style="margin: 0 0 16px; font-size: 14px; color: #94A3B8; line-height: 1.5;">${email ? escapeHtml(email) : 'Your email'} has been opted out of future event announcements.</p>
+            <p style="margin: 0; font-size: 12px; color: #64748B;">BAPS Swaminarayan Sanstha Bangkok</p>
+          </div>
+        </body>
+        </html>
+      `;
+      return HtmlService.createHtmlOutput(outputHtml);
+    }
+
     // Return live event settings for dynamic countdown & date display
     if (e && e.parameter && e.parameter.action === 'getSettings') {
       const settings = getEventSettings();
@@ -123,6 +159,9 @@ function getEventSettings() {
       if (key) map[key] = val;
     }
 
+    const enableQrRaw = map["Enable QR Code"] !== undefined ? map["Enable QR Code"].toString().trim().toLowerCase() : "true";
+    const enableQrCode = enableQrRaw !== "false" && enableQrRaw !== "no" && enableQrRaw !== "0" && enableQrRaw !== "disabled";
+
     return {
       success: true,
       eventName: map["Event Name"] || DEFAULT_EVENT_NAME,
@@ -133,7 +172,8 @@ function getEventSettings() {
       venueAddress: map["Venue Address"] || DEFAULT_VENUE_ADDRESS,
       countdownTarget: map["Target Countdown ISO"] || DEFAULT_COUNTDOWN_ISO,
       contactPhone: map["Contact Phone"] || "+66 81 234 5678",
-      officialEmail: map["Official Email"] || OFFICIAL_EMAIL
+      officialEmail: map["Official Email"] || OFFICIAL_EMAIL,
+      enableQrCode: enableQrCode
     };
   } catch (e) {
     return {
@@ -146,7 +186,8 @@ function getEventSettings() {
       venueAddress: DEFAULT_VENUE_ADDRESS,
       countdownTarget: DEFAULT_COUNTDOWN_ISO,
       contactPhone: "+66 81 234 5678",
-      officialEmail: OFFICIAL_EMAIL
+      officialEmail: OFFICIAL_EMAIL,
+      enableQrCode: true
     };
   }
 }
@@ -533,6 +574,8 @@ function getSubscribedEmails(rawSheet) {
  * Branded Email Template Wrapper
  */
 function wrapEmailTemplate(title, contentHtml, settings) {
+  const cleanEventTitle = (settings.eventName || "").replace(/From Burnout to Balance\s*[-–—:]*\s*/gi, "").trim() || "Pujya Dr. Gyanvatsal Swami in Bangkok";
+
   return `
     <!DOCTYPE html>
     <html>
@@ -541,14 +584,18 @@ function wrapEmailTemplate(title, contentHtml, settings) {
       <div style="max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 16px; overflow: hidden; border: 1px solid #E2E8F0; box-shadow: 0 10px 25px rgba(0,0,0,0.06);">
         <div style="background: #A94808; padding: 26px 24px; text-align: center; color: #FFFFFF;">
           <div style="font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #FED7AA; margin-bottom: 4px;">BAPS SWAMINARAYAN SANSTHA THAILAND</div>
-          <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px;">${escapeHtml(settings.eventName)}</h1>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px;">${escapeHtml(cleanEventTitle)}</h1>
         </div>
         <div style="padding: 24px;">
           ${contentHtml}
         </div>
-        <div style="background-color: #F8FAFC; border-top: 1px solid #E2E8F0; padding: 16px; text-align: center; font-size: 11.5px; color: #94A3B8;">
-          Copyright © 2026 BAPS Bangkok Thailand. All Rights Reserved.<br/>
-          Crafted with dedication by THE MOZZERELLA COMPANY • mozzerellaofficial@gmail.com
+        <div style="background-color: #F8FAFC; border-top: 1px solid #E2E8F0; padding: 18px 16px; text-align: center; font-size: 11.5px; color: #94A3B8; line-height: 1.6;">
+          Copyright &copy; 2026 BAPS Bangkok Thailand. All Rights Reserved.<br/>
+          Crafted with dedication by THE MOZZERELLA COMPANY &bull; mozzerellaofficial@gmail.com
+          <div style="margin-top: 10px; font-size: 11px; color: #94A3B8;">
+            You received this email because you registered for this event. 
+            <a href="mailto:${OFFICIAL_EMAIL}?subject=Unsubscribe%20Request&body=Please%20unsubscribe%20my%20email%20address%20from%20future%20event%20announcements." style="color: #64748B; text-decoration: underline;">Unsubscribe</a> from future event updates.
+          </div>
         </div>
       </div>
     </body>
@@ -561,7 +608,31 @@ function wrapEmailTemplate(title, contentHtml, settings) {
  */
 function sendConfirmationEmail(info) {
   const settings = getEventSettings();
-  const subject = "Entry Pass Confirmed: " + settings.eventName + " (" + info.regId + ")";
+  const cleanEventName = (settings.eventName || "").replace(/From Burnout to Balance\s*[-–—:]*\s*/gi, "").trim() || "Pujya Dr. Gyanvatsal Swami in Bangkok";
+  const subject = "Entry Pass Confirmed: " + cleanEventName + " (" + info.regId + ")";
+
+  // Generate QR Code for express welcome desk check-in (if enabled in Event_Settings)
+  const isQrEnabled = settings.enableQrCode !== false;
+  const qrUrl = "https://quickchart.io/qr?text=" + encodeURIComponent(info.regId) + "&size=200&margin=1";
+  const inlineImages = {};
+  let qrImgSrc = qrUrl;
+  if (isQrEnabled) {
+    try {
+      const qrBlob = UrlFetchApp.fetch(qrUrl).getBlob().setName("pass_qr_" + info.regId + ".png");
+      inlineImages["passQr"] = qrBlob;
+      qrImgSrc = "cid:passQr";
+    } catch (eQr) {
+      Logger.log("Inline QR fetch fallback: " + eQr.toString());
+    }
+  }
+
+  const qrBlockHtml = isQrEnabled ? `
+      <!-- Generated QR Code for Welcome Desk Express Check-in -->
+      <div style="margin: 8px auto 12px; display: inline-block; padding: 10px; background: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+        <img src="${qrImgSrc}" alt="Entry Pass QR Code - ${escapeHtml(info.regId)}" width="160" height="160" style="display: block; margin: 0 auto; border: 0;" />
+        <div style="font-size: 10.5px; color: #64748B; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px;">Scan for Express Entry</div>
+      </div>
+  ` : "";
 
   let attendeeRowsHtml = "";
   let attendeeTextList = "";
@@ -588,6 +659,9 @@ function sendConfirmationEmail(info) {
     attendeeTextList += `  ${idx + 1}. ${att.name} (${att.type}, ${att.gender}) - Badge ID: ${att.badgeId}\n`;
   });
 
+  const mapsQuery = encodeURIComponent(settings.venueName + " " + settings.venueAddress);
+  const mapsUrl = "https://www.google.com/maps/search/?api=1&query=" + mapsQuery;
+
   const mainContent = `
     <p style="margin: 0 0 14px; font-size: 15px; line-height: 1.6; color: #1E293B;">
       <strong>Jai Swaminarayan, ${escapeHtml(info.parentName)}!</strong>
@@ -596,21 +670,24 @@ function sendConfirmationEmail(info) {
       Thank you for registering. Your entry pass for the inspirational discourse by <strong>Pujya Dr. Gyanvatsal Swami</strong> is confirmed. We look forward to welcoming you and your family!
     </p>
 
-    <!-- Group Pass ID Highlight Box -->
-    <div style="background-color: #FFFDF9; border: 2px dashed #A94808; border-radius: 12px; padding: 18px; text-align: center; margin-bottom: 22px;">
-      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #8E3804; font-weight: 800; margin-bottom: 4px;">Group Pass ID</div>
-      <div style="font-size: 24px; font-weight: 800; color: #A94808; font-family: monospace; letter-spacing: 1px;">${escapeHtml(info.regId)}</div>
-      <div style="font-size: 12px; color: #78716C; margin-top: 4px;">Total Reserved: <strong>${info.attendees.length} ${info.attendees.length === 1 ? 'Seat' : 'Seats'}</strong></div>
+    <!-- Group Pass ID Highlight Box with Official QR Code (if enabled) -->
+    <div style="background-color: #FFFDF9; border: 2px dashed #A94808; border-radius: 14px; padding: 20px 18px; text-align: center; margin-bottom: 22px;">
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #8E3804; font-weight: 800; margin-bottom: 4px;">Official Group Pass</div>
+      <div style="font-size: 26px; font-weight: 800; color: #A94808; font-family: monospace; letter-spacing: 1px; margin-bottom: 10px;">${escapeHtml(info.regId)}</div>
+      
+      ${qrBlockHtml}
+
+      <div style="font-size: 13px; color: #475569; margin-top: 4px;">Total Reserved: <strong style="color: #0F172A;">${info.attendees.length} ${info.attendees.length === 1 ? 'Seat' : 'Seats'}</strong></div>
     </div>
 
-    <!-- Event Schedule & Venue Box -->
-    <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px 18px; margin-bottom: 22px;">
-      <div style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: #0F172A; margin-bottom: 10px; letter-spacing: 0.5px;">Event Schedule &amp; Venue</div>
-      <p style="margin: 5px 0; font-size: 13.5px; color: #334155;"><strong>Date:</strong> ${escapeHtml(settings.eventDate)}</p>
-      <p style="margin: 5px 0; font-size: 13.5px; color: #334155;"><strong>Time:</strong> ${escapeHtml(settings.startTime)} ICT (Doors open at ${escapeHtml(settings.doorsOpen)})</p>
-      <p style="margin: 5px 0; font-size: 13.5px; color: #334155;"><strong>Venue:</strong> ${escapeHtml(settings.venueName)}</p>
-      <p style="margin: 5px 0; font-size: 12px; color: #64748B;">${escapeHtml(settings.venueAddress)}</p>
-      <p style="margin: 5px 0; font-size: 13.5px; color: #334155;"><strong>Admission:</strong> Free for all registered attendees</p>
+    <!-- Event Schedule & Venue Box (Live from Event_Settings) -->
+    <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px 20px; margin-bottom: 22px;">
+      <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: #0F172A; margin-bottom: 12px; letter-spacing: 0.5px;">Event Schedule &amp; Venue</div>
+      <p style="margin: 6px 0; font-size: 14px; color: #1E293B;"><strong>Date:</strong> ${escapeHtml(settings.eventDate)}</p>
+      <p style="margin: 6px 0; font-size: 14px; color: #1E293B;"><strong>Time:</strong> ${escapeHtml(settings.startTime)} ICT (Doors open at ${escapeHtml(settings.doorsOpen)})</p>
+      <p style="margin: 6px 0; font-size: 14px; color: #1E293B;"><strong>Venue:</strong> ${escapeHtml(settings.venueName)}</p>
+      <p style="margin: 4px 0 12px; font-size: 12.5px; color: #64748B;">${escapeHtml(settings.venueAddress)}</p>
+      <a href="${mapsUrl}" target="_blank" style="display: inline-block; background-color: #A94808; color: #ffffff; font-size: 12.5px; font-weight: 700; text-decoration: none; padding: 8px 16px; border-radius: 8px;">Open Location in Google Maps &rarr;</a>
     </div>
 
     <!-- Registered Attendees Badges Table -->
@@ -631,10 +708,6 @@ function sendConfirmationEmail(info) {
       </table>
     </div>
 
-    <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 10px; padding: 12px 14px; margin-bottom: 20px; font-size: 13px; color: #065F46; line-height: 1.5;">
-      💡 <strong>Check-in Notice:</strong> Please arrive by ${escapeHtml(settings.doorsOpen)} and keep your Group Pass ID (${escapeHtml(info.regId)}) ready on your mobile screen or printed out for seamless entry at the welcome desk.
-    </div>
-
     <p style="margin: 0; font-size: 12.5px; color: #64748B; line-height: 1.5;">
       For any queries, please contact BAPS Swaminarayan Sanstha Bangkok at <a href="mailto:${OFFICIAL_EMAIL}" style="color: #A94808; font-weight: 600; text-decoration: underline;">${OFFICIAL_EMAIL}</a> or ${escapeHtml(settings.contactPhone)}.
     </p>
@@ -642,23 +715,32 @@ function sendConfirmationEmail(info) {
 
   const htmlBody = wrapEmailTemplate("Registration Confirmed", mainContent, settings);
   const plainText = "Jai Swaminarayan, " + info.parentName + "!\n\n" +
-    "Your registration for " + settings.eventName + " is confirmed.\n\n" +
+    "Your registration for " + cleanEventName + " is confirmed.\n\n" +
     "Group Pass ID: " + info.regId + "\n" +
     "Total Seats Reserved: " + info.attendees.length + "\n" +
-    "Date & Time: " + settings.eventDate + " • " + settings.startTime + "\n" +
-    "Venue: " + settings.venueName + "\n\n" +
+    "Date & Time: " + settings.eventDate + " • " + settings.startTime + " (Doors open " + settings.doorsOpen + ")\n" +
+    "Venue: " + settings.venueName + "\n" +
+    "Address: " + settings.venueAddress + "\n" +
+    "Google Maps: " + mapsUrl + "\n\n" +
     "Registered Attendees:\n" + attendeeTextList + "\n" +
     "Contact: " + OFFICIAL_EMAIL + "\n" +
-    "BAPS Swaminarayan Sanstha Bangkok";
+    "BAPS Swaminarayan Sanstha Bangkok\n\n" +
+    "To unsubscribe from future event updates, email " + OFFICIAL_EMAIL + " with 'Unsubscribe'.";
 
-  MailApp.sendEmail({
+  const mailOptions = {
     to: info.parentEmail,
     replyTo: OFFICIAL_EMAIL,
     name: "BAPS Swaminarayan Sanstha Bangkok",
     subject: subject,
     body: plainText,
     htmlBody: htmlBody
-  });
+  };
+
+  if (Object.keys(inlineImages).length > 0) {
+    mailOptions.inlineImages = inlineImages;
+  }
+
+  MailApp.sendEmail(mailOptions);
 }
 
 /**
@@ -809,13 +891,14 @@ function setupAllTabs(ssInstance) {
           ["Venue Address", DEFAULT_VENUE_ADDRESS, "Detailed address of venue"],
           ["Target Countdown ISO", DEFAULT_COUNTDOWN_ISO, "Exact target timestamp for live countdown timer (YYYY-MM-DDTHH:mm:ss+07:00)"],
           ["Contact Phone", "+66 81 234 5678", "Organizer inquiry WhatsApp / phone"],
-          ["Official Email", OFFICIAL_EMAIL, "Official contact & reply-to email address"]
+          ["Official Email", OFFICIAL_EMAIL, "Official contact & reply-to email address"],
+          ["Enable QR Code", "TRUE", "Enable or disable QR code generation in confirmation email and pass (TRUE/FALSE)"]
         ];
         defaultSettings.forEach(r => sheet.appendRow(r));
         sheet.setColumnWidth(1, 200);
         sheet.setColumnWidth(2, 320);
         sheet.setColumnWidth(3, 400);
-        sheet.getRange("A2:A10").setFontWeight("bold");
+        sheet.getRange("A2:A11").setFontWeight("bold");
         sheet.getRange("B2:B10").setBackground("#FFFDE7").setNumberFormat("@");
       }
 

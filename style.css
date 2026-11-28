@@ -468,6 +468,257 @@ html.lenis body {
   padding-bottom: 90px !important;
 }
 
+/* ==========================================================================
+   Hero Locked Out State: Flyer and Gallery completely hidden once arrived at countdown
+   ========================================================================== */
+body.hero-locked-out #flyer-section,
+body.hero-locked-out #gallery-section {
+  display: none !important;
+}
+
+/* 3D Peek Animation: Card 0 lifts and tilts upward in 3D halfway to reveal registration card */
+@keyframes peekReveal3DOnce {
+  0% {
+    transform: perspective(1000px) translateY(0%) rotateX(0deg);
+    filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.4));
+  }
+  42% {
+    transform: perspective(1000px) translateY(-24%) rotateX(12.5deg);
+    filter: drop-shadow(0 40px 80px rgba(0, 0, 0, 0.78));
+  }
+  56% {
+    transform: perspective(1000px) translateY(-24%) rotateX(12.5deg);
+    filter: drop-shadow(0 40px 80px rgba(0, 0, 0, 0.78));
+  }
+  100% {
+    transform: perspective(1000px) translateY(0%) rotateX(0deg);
+    filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.4));
+  }
+}
+
+.flip-card.card-event-info.is-peeking {
+  animation: peekReveal3DOnce 1.85s cubic-bezier(0.25, 1, 0.35, 1) !important;
+  will-change: transform, filter;
+}
+
+/* ==========================================================================
+   Card 0 Upward Scroll Indicator (2 SVG Arrows that glide up during peek)
+   ========================================================================== */
+.peek-scroll-indicator {
+  position: absolute;
+  bottom: 82px;
+  left: 50%;
+  transform: translate3d(-50%, 0, 50px);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 18px 6px;
+  background: rgba(10, 11, 14, 0.94);
+  border: 1.5px solid rgba(245, 158, 11, 0.85);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.85), 0 0 24px rgba(245, 158, 11, 0.45);
+  border-radius: 9999px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.flip-card.card-event-info.is-peeking .peek-scroll-indicator {
+  visibility: visible;
+  animation: peekIndicatorFadeGlide 1.85s cubic-bezier(0.25, 1, 0.35, 1) forwards;
+}
+
+@keyframes peekIndicatorFadeGlide {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, 14px, 50px) scale(0.92);
+  }
+  20% {
+    opacity: 1;
+    transform: translate3d(-50%, 2px, 50px) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(-50%, -10px, 50px) scale(1.02);
+  }
+  75% {
+    opacity: 0.9;
+    transform: translate3d(-50%, -16px, 50px) scale(1);
+  }
+  92%, 100% {
+    opacity: 0;
+    transform: translate3d(-50%, -22px, 50px) scale(0.96);
+  }
+}
+
+.peek-arrows-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: -2px;
+}
+
+.peek-arrow-svg {
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(245, 158, 11, 0.6));
+}
+
+.peek-arrow-1 {
+  margin-bottom: -10px;
+}
+
+.flip-card.card-event-info.is-peeking .peek-arrow-1 {
+  animation: peekArrowUp1 1.85s cubic-bezier(0.25, 1, 0.35, 1) forwards;
+}
+
+.flip-card.card-event-info.is-peeking .peek-arrow-2 {
+  animation: peekArrowUp2 1.85s cubic-bezier(0.25, 1, 0.35, 1) forwards;
+}
+
+@keyframes peekArrowUp1 {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-8px);
+  }
+  80% {
+    opacity: 0.6;
+    transform: translateY(-16px);
+  }
+  95%, 100% {
+    opacity: 0;
+    transform: translateY(-22px);
+  }
+}
+
+@keyframes peekArrowUp2 {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  26% {
+    opacity: 0.9;
+    transform: translateY(2px);
+  }
+  56% {
+    opacity: 1;
+    transform: translateY(-6px);
+  }
+  82% {
+    opacity: 0.5;
+    transform: translateY(-14px);
+  }
+  95%, 100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+.peek-scroll-text {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #fbbf24;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+
+/* Card 0 Bottom Action & Teaser Bar */
+.card0-bottom-teaser {
+  padding: 12px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(12, 13, 16, 0.65);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn-proceed-registration {
+  width: 100%;
+  max-width: 420px;
+  height: 46px;
+  background: linear-gradient(135deg, #a94808 0%, #ca5608 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 18px rgba(169, 72, 8, 0.40);
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  animation: subtlePulse 2.2s infinite ease-in-out;
+}
+
+.btn-proceed-registration:hover {
+  background: linear-gradient(135deg, #b9500a 0%, #d9600a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(169, 72, 8, 0.55);
+}
+
+.btn-proceed-registration:active {
+  transform: translateY(0);
+}
+
+@keyframes subtlePulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 18px rgba(169, 72, 8, 0.40); }
+  50% { transform: scale(1.02); box-shadow: 0 6px 24px rgba(169, 72, 8, 0.60); }
+}
+
+.teaser-scroll-cue {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #a1a1aa;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.teaser-arrow {
+  display: inline-block;
+  color: #f59e0b;
+  font-weight: 800;
+  animation: bounceDown 1.5s infinite;
+}
+
+@keyframes bounceDown {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+/* Subtle nudge on Flyer REGISTER button if user tries to scroll before clicking */
+.flyer-cta-wrap.nudge-attention #flyer-register-btn {
+  animation: buttonNudge 0.6s ease;
+}
+
+@keyframes buttonNudge {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.06); box-shadow: 0 0 25px rgba(245, 158, 11, 0.8); }
+  50% { transform: scale(0.98); }
+  75% { transform: scale(1.04); }
+}
+
 /* Base Flip Card (Overlapping in the same stage) */
 .flip-card {
   position: absolute;
@@ -968,38 +1219,111 @@ html.lenis body {
   background-color: #fffaf3;
 }
 
-/* Gender Selector Pills (1-Tap Selection) */
+/* Gender Selector (High-Contrast, Distinct Male & Female Colors with Active Checkmark) */
 .gender-selector {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
+.gender-option {
+  display: block;
+  cursor: pointer;
+}
+
 .gender-option input {
-  display: none;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .gender-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 44px;
+  gap: 8px;
+  height: 46px;
   border-radius: 12px;
   border: 1.5px solid rgba(255, 255, 255, 0.28);
-  background: rgba(0, 0, 0, 0.15);
-  font-size: 13.5px;
+  background: rgba(0, 0, 0, 0.22);
+  font-size: 14px;
   font-weight: 700;
-  color: #ffffff;
+  color: rgba(255, 255, 255, 0.90);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
+  box-sizing: border-box;
 }
 
-.gender-option input:checked + .gender-btn {
-  background: #ffedd5;
-  border-color: #fdba74;
-  color: #7c2d12;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+/* Radio Indicator Circle inside button */
+.gender-indicator {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.50);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.gender-indicator::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+/* MALE ACTIVE: Crisp Solid White Card with Vibrant Ocean Blue Border & Indicator */
+.gender-option input[value="Male"]:checked + .gender-btn,
+.gender-option input:checked + .gender-btn.gender-male {
+  background: #ffffff !important;
+  border: 2.5px solid #0284c7 !important;
+  color: #0369a1 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 18px rgba(2, 132, 199, 0.38) !important;
+  transform: scale(1.02);
+}
+
+.gender-option input[value="Male"]:checked + .gender-btn .gender-indicator,
+.gender-option input:checked + .gender-btn.gender-male .gender-indicator {
+  border-color: #0284c7 !important;
+  background: #0284c7 !important;
+}
+
+.gender-option input[value="Male"]:checked + .gender-btn .gender-indicator::after,
+.gender-option input:checked + .gender-btn.gender-male .gender-indicator::after {
+  background: #ffffff !important;
+}
+
+/* FEMALE ACTIVE: Crisp Solid White Card with Vibrant Rose Pink Border & Indicator */
+.gender-option input[value="Female"]:checked + .gender-btn,
+.gender-option input:checked + .gender-btn.gender-female {
+  background: #ffffff !important;
+  border: 2.5px solid #d946ef !important;
+  color: #a21caf !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 18px rgba(217, 70, 239, 0.38) !important;
+  transform: scale(1.02);
+}
+
+.gender-option input[value="Female"]:checked + .gender-btn .gender-indicator,
+.gender-option input:checked + .gender-btn.gender-female .gender-indicator {
+  border-color: #d946ef !important;
+  background: #d946ef !important;
+}
+
+.gender-option input[value="Female"]:checked + .gender-btn .gender-indicator::after,
+.gender-option input:checked + .gender-btn.gender-female .gender-indicator::after {
+  background: #ffffff !important;
+}
+
+.gender-btn:hover {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(0, 0, 0, 0.30);
 }
 
 /* Stepper Controls Row (- 0 +) */
@@ -1318,13 +1642,17 @@ html.lenis body {
    Pass Confirmation Ticket (Fix for side-by-side cutoff & unreadable white text)
    ========================================================================== */
 .reg-success {
-  display: flex;
+  display: none;
   flex-direction: column;
   align-items: stretch;
   width: 100%;
   box-sizing: border-box;
   animation: fadeIn 0.4s ease;
   padding-bottom: 24px;
+}
+
+.reg-success.is-visible {
+  display: flex !important;
 }
 
 @keyframes fadeIn {
@@ -1549,7 +1877,8 @@ html.lenis body {
 
 .pass-email-note strong {
   color: #047857;
-  word-break: break-all;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Actions Stacked below the Ticket */
@@ -1758,8 +2087,8 @@ html.lenis body {
   .column:nth-child(2) { top: -60px; }
   .column:nth-child(3) { top: -40px; }
 
-  /* Ensure Pass Ticket is full width on mobile with actions stacked cleanly below */
-  .reg-success {
+  /* Ensure Pass Ticket is full width on mobile when visible with actions stacked cleanly below */
+  .reg-success.is-visible {
     display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;

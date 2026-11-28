@@ -29,6 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
       wheelMultiplier: 0.85,
       touchMultiplier: 1.15,
     });
+    // Initially stop Lenis so manual scrolling is strictly locked on the Hero Flyer
+    lenisInstance.stop();
 
     function raf(time) {
       if (lenisInstance) {
@@ -103,6 +105,38 @@ document.addEventListener('DOMContentLoaded', () => {
     col2.style.transform = `translate3d(0, ${offset2}px, 0)`;
   }
 
+  // Cinematic glide function for smooth hero flyer -> gallery -> countdown card flight
+  function cinematicGlideTo(targetY, durationMs, onArrival) {
+    if (lenisInstance) lenisInstance.stop();
+
+    const startY = window.scrollY || window.pageYOffset || 0;
+    const distance = targetY - startY;
+    const startTime = performance.now();
+
+    function step(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(1, elapsed / durationMs);
+
+      // Smooth custom ease-in-out cubic easing
+      const ease = progress < 0.5
+        ? 4 * progress * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+      const currentScrollY = startY + distance * ease;
+      window.scrollTo(0, currentScrollY);
+      updateParallax();
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        window.scrollTo(0, targetY);
+        updateParallax();
+        if (onArrival) onArrival();
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
 
   // =========================================================================
   // 3. IN-PLACE 3D Card Flip (Zero empty space below!)
@@ -123,6 +157,56 @@ document.addEventListener('DOMContentLoaded', () => {
   let isClipped = false;
   let lastUnclipTime = 0;
   let idleTimer = null;
+  let hasTransitioned = false; // Locked on Hero Flyer until "REGISTER NOW" is tapped
+  let isTransitioning = false;  // Disables all scroll during cinematic glide
+
+  function nudgeRegisterButton() {
+    const flyerCta = document.querySelector('.flyer-cta-wrap');
+    if (flyerCta) {
+      flyerCta.classList.remove('nudge-attention');
+      void flyerCta.offsetWidth; // force reflow
+      flyerCta.classList.add('nudge-attention');
+    }
+  }
+
+  const PEEK_INTERVAL_MS = 6472.135955;
+  let peekRepeatTimer = null;
+
+  function stopPeekRepeat() {
+    if (peekRepeatTimer) {
+      clearTimeout(peekRepeatTimer);
+      peekRepeatTimer = null;
+    }
+  }
+
+  function scheduleNextPeek() {
+    stopPeekRepeat();
+    // Only schedule if user is resting on Card 0 and is clipped
+    if (currentCard !== 0 || !isClipped) return;
+
+    peekRepeatTimer = setTimeout(() => {
+      if (currentCard === 0 && isClipped && !isFlipping) {
+        triggerPeekAnimation();
+      }
+    }, PEEK_INTERVAL_MS);
+  }
+
+  function triggerPeekAnimation() {
+    if (!flipCard0 || currentCard !== 0) return;
+    flipCard0.classList.remove('is-peeking');
+    void flipCard0.offsetWidth; // force reflow
+    flipCard0.classList.add('is-peeking');
+    setTimeout(() => {
+      if (flipCard0) {
+        flipCard0.classList.remove('is-peeking');
+      }
+      startIdleTimer();
+      // Only repeats if the user is on that screen for more than that time
+      if (currentCard === 0 && isClipped && !isFlipping) {
+        scheduleNextPeek();
+      }
+    }, 1900);
+  }
 
   function getStackTop() {
     if (!stackSection) return 0;
@@ -188,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Automatic scroll clip detector as user scrolls down
   window.checkScrollClip = function() {
-    if (isClipped || currentCard === 1) return;
+    if (!hasTransitioned || isTransitioning || isClipped || currentCard === 1) return;
     if (Date.now() - lastUnclipTime < 900) return;
 
     const stackTop = getStackTop();
@@ -223,6 +307,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const section = stackSection || document.getElementById('stack-section');
 
     if (targetIndex === 1) {
+      stopPeekRepeat();
+      if (flipCard0) flipCard0.classList.remove('is-peeking');
+
       // 1. Flip Card 0 UP in 3D
       flipCard0.style.transition = 'transform 1.1s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease';
       flipCard0.style.transform = 'perspective(900px) translateY(-120%) rotateX(24deg)';
@@ -289,6 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         isFlipping = false;
         startIdleTimer();
+        scheduleNextPeek();
       }, 1050);
     }
   }
@@ -297,43 +385,45 @@ document.addEventListener('DOMContentLoaded', () => {
   // Unified Window Scroll / Gesture Manager (Clipped and Unclipped State)
   // =========================================================================
   window.addEventListener('wheel', (e) => {
-    // If currently on Card 1 (Registration form):
+    // 1. If user is locked on Hero Flyer, block manual scrolling down:
+    if (!hasTransitioned) {
+      if (e.deltaY > 0) {
+        e.preventDefault();
+        nudgeRegisterButton();
+      }
+      return;
+    }
+
+    // 2. If cinematic glide transition is actively playing, block all wheel inputs:
+    if (isTransitioning) {
+      e.preventDefault();
+      return;
+    }
+
+    // 3. If currently on Card 1 (Registration form):
     if (currentCard === 1) {
-      const stackTop = getStackTop();
       // If user reaches top of Card 1 and scrolls UP, flip Card 0 back down!
-      if (window.scrollY <= stackTop + 10 && e.deltaY < -15) {
+      if (window.scrollY <= 10 && e.deltaY < -15) {
         e.preventDefault();
         if (!isFlipping) {
           flipToCard(0);
         }
         return;
       }
-      // Otherwise allow native downward scrolling freely!
+      // Otherwise allow native downward scrolling freely through registration form & footer!
       return;
     }
 
-    if (!isClipped) {
-      const stackTop = getStackTop();
-      if (e.deltaY > 0 && window.scrollY >= stackTop - 15) {
-        e.preventDefault();
-        clipAtCountdown(stackTop);
-      }
-      return;
-    }
-
-    // WE ARE CLIPPED on Card 0 (Countdown + Map):
-    e.preventDefault();
-
-    if (isFlipping) return;
-
+    // 4. If on Card 0 (Countdown & Map) while hero is locked out:
     if (currentCard === 0) {
+      e.preventDefault();
+      if (isFlipping) return;
       if (e.deltaY > 12) {
         // Scrolling DOWN on countdown/map -> flip to registration card
         flipToCard(1);
-      } else if (e.deltaY < -12) {
-        // Scrolling UP on countdown/map -> unclip and scroll back up to gallery
-        unclipAndScrollUp();
       }
+      // Scrolling UP on Card 0 does nothing (Card 0 is the permanent top limit!)
+      return;
     }
   }, { passive: false });
 
@@ -345,14 +435,30 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { passive: true });
 
   window.addEventListener('touchmove', (e) => {
-    // If currently on Card 1 (Registration form):
+    // 1. If user is locked on Hero Flyer, block manual touch scrolling down:
+    if (!hasTransitioned) {
+      const currentY = e.touches[0].clientY;
+      const diffY = touchStartY - currentY; // positive = swipe up (scroll down)
+      if (diffY > 0) {
+        e.preventDefault();
+        nudgeRegisterButton();
+      }
+      return;
+    }
+
+    // 2. If cinematic glide transition is actively playing, block all touch inputs:
+    if (isTransitioning) {
+      e.preventDefault();
+      return;
+    }
+
+    // 3. If currently on Card 1 (Registration form):
     if (currentCard === 1) {
       const currentY = e.touches[0].clientY;
       const diffY = touchStartY - currentY; // negative = swipe down (scroll up)
-      const stackTop = getStackTop();
 
       // If at top of registration card and user pulls down (diffY < -30): flip Card 0 back down!
-      if (window.scrollY <= stackTop + 10 && diffY < -30) {
+      if (window.scrollY <= 10 && diffY < -30) {
         if (document.activeElement && typeof document.activeElement.blur === 'function') {
           document.activeElement.blur();
         }
@@ -367,61 +473,61 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (!isClipped) {
-      const stackTop = getStackTop();
-      if (window.scrollY >= stackTop - 15) {
-        const currentY = e.touches[0].clientY;
-        const diffY = touchStartY - currentY;
-        if (diffY > 0) {
-          clipAtCountdown(stackTop);
-          e.preventDefault();
-        }
-      }
-      return;
-    }
-
-    // WE ARE CLIPPED on Card 0 (Countdown + Map):
-    const currentY = e.touches[0].clientY;
-    const diffY = touchStartY - currentY; // positive = swipe up (scroll down); negative = swipe down (scroll up)
-
-    e.preventDefault();
-
-    if (isFlipping) return;
-    if (Math.abs(diffY) < 18) return;
-
+    // 4. If on Card 0 (Countdown & Map) while hero is locked out:
     if (currentCard === 0) {
+      const currentY = e.touches[0].clientY;
+      const diffY = touchStartY - currentY; // positive = swipe up (scroll down)
+
+      e.preventDefault();
+      if (isFlipping) return;
       if (diffY > 18) {
         // Swiping up over countdown or map -> flip to register
         touchStartY = currentY;
         flipToCard(1);
-      } else if (diffY < -18) {
-        // Swiping down over countdown or map -> unclip to gallery
-        touchStartY = currentY;
-        unclipAndScrollUp();
       }
+      return;
     }
   }, { passive: false });
 
   // Keyboard navigation support while clipped
   window.addEventListener('keydown', (e) => {
-    if (!isClipped) return;
+    if (!hasTransitioned) {
+      if (['ArrowDown', 'PageDown', ' '].includes(e.key)) {
+        e.preventDefault();
+        nudgeRegisterButton();
+      }
+      return;
+    }
+    if (isTransitioning) {
+      e.preventDefault();
+      return;
+    }
     const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
     if (isInput) return;
 
     if (['ArrowDown', 'PageDown', ' '].includes(e.key)) {
+      if (currentCard === 0 && !isFlipping) {
+        e.preventDefault();
+        flipToCard(1);
+      }
+    } else if (['ArrowUp', 'PageUp'].includes(e.key)) {
+      if (currentCard === 1 && window.scrollY <= 10 && !isFlipping) {
+        e.preventDefault();
+        flipToCard(0);
+      }
+    }
+  });
+
+  // Action button / teaser on Card 0: flips to Card 1
+  const proceedToFormBtn = document.getElementById('proceedToFormBtn');
+  if (proceedToFormBtn) {
+    proceedToFormBtn.addEventListener('click', (e) => {
       e.preventDefault();
       if (currentCard === 0 && !isFlipping) {
         flipToCard(1);
       }
-    } else if (['ArrowUp', 'PageUp'].includes(e.key)) {
-      e.preventDefault();
-      if (currentCard === 1 && !isFlipping) {
-        flipToCard(0);
-      } else if (currentCard === 0 && !isFlipping) {
-        unclipAndScrollUp();
-      }
-    }
-  });
+    });
+  }
 
   // Bottom action banner on Card 0: flips to Card 1
   const cardScrollPrompt = document.getElementById('cardScrollPrompt');
@@ -444,13 +550,75 @@ document.addEventListener('DOMContentLoaded', () => {
   if (flyerRegisterBtn) {
     flyerRegisterBtn.addEventListener('click', (e) => {
       e.preventDefault();
+      if (isTransitioning) return;
+      isTransitioning = true;
+
+      // Ensure hero-locked state is cleared and Lenis is stopped during custom cinematic flight
+      document.documentElement.classList.remove('is-hero-locked');
+      document.body.classList.remove('is-hero-locked');
+      if (lenisInstance) lenisInstance.stop();
+
       const stackTop = getStackTop();
-      if (lenisInstance) lenisInstance.start();
-      scrollToTarget(stackTop, 1.4, () => {
-        clipAtCountdown(stackTop);
-        flipToCard(1);
+
+      // Smooth cinematic glide through the flyer and parallax gallery (~2.5s)
+      cinematicGlideTo(stackTop, 2500, () => {
+        isTransitioning = false;
+        hasTransitioned = true;
+        isClipped = true;
+        currentCard = 0;
+
+        // Permanently lock out flyer and gallery above the countdown card
+        document.body.classList.add('hero-locked-out');
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        if (lenisInstance) {
+          lenisInstance.scrollTo(0, { immediate: true });
+        }
+
+        // Trigger 3D peek animation teasing the registration card underneath
+        triggerPeekAnimation();
       });
     });
+  }
+
+  // Restores hero flyer and gallery when returning from pass confirmation or footer
+  function restoreHeroAndFlyer() {
+    stopPeekRepeat();
+    document.body.classList.remove('hero-locked-out');
+    document.documentElement.classList.remove('is-hero-locked');
+    document.body.classList.remove('is-hero-locked');
+    hasTransitioned = false;
+    isTransitioning = false;
+    isClipped = false;
+    currentCard = 0;
+
+    if (flipCard0) {
+      flipCard0.classList.remove('is-peeking');
+      flipCard0.style.transform = 'none';
+      flipCard0.style.transition = 'none';
+    }
+    if (flipCard1) {
+      flipCard1.style.transform = 'translateY(16px) scale(0.96)';
+      flipCard1.style.pointerEvents = 'none';
+    }
+    const frame = document.getElementById('flipStackFrame');
+    const stage = document.getElementById('flipStackStage');
+    const section = stackSection || document.getElementById('stack-section');
+    if (frame) frame.classList.remove('is-fullscreen');
+    if (stage) stage.classList.remove('is-fullscreen');
+    if (section) section.classList.remove('has-fullscreen');
+
+    if (lenisInstance) lenisInstance.start();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (lenisInstance) {
+      lenisInstance.scrollTo(0, { duration: 1.5 });
+    }
+
+    // Re-engage hero scroll lock once back at the top
+    setTimeout(() => {
+      document.documentElement.classList.add('is-hero-locked');
+      document.body.classList.add('is-hero-locked');
+      if (lenisInstance) lenisInstance.stop();
+    }, 1200);
   }
 
   // Back to Top button in footer: unclips and scrolls to top
@@ -458,10 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (backToTop) {
     backToTop.addEventListener('click', (e) => {
       e.preventDefault();
-      isClipped = false;
-      lastUnclipTime = Date.now();
-      if (lenisInstance) lenisInstance.start();
-      scrollToTarget(0, 1.8);
+      restoreHeroAndFlyer();
     });
   }
 
@@ -469,10 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const backToFlyerBtn = document.getElementById('backToFlyerBtn');
   if (backToFlyerBtn) {
     backToFlyerBtn.addEventListener('click', () => {
-      isClipped = false;
-      lastUnclipTime = Date.now();
-      if (lenisInstance) lenisInstance.start();
-      scrollToTarget(0, 1.8);
+      restoreHeroAndFlyer();
     });
   }
 
@@ -600,9 +762,15 @@ document.addEventListener('DOMContentLoaded', () => {
   updateCountdown();
   setInterval(updateCountdown, 1000);
 
+  let isQrEnabledOnSite = true;
+
   // Apply Live Event Settings & Countdown Target from Google Sheets
   function applyEventSettings(res) {
     if (!res || !res.success) return;
+
+    if (res.enableQrCode !== undefined) {
+      isQrEnabledOnSite = res.enableQrCode === true || res.enableQrCode === 'true';
+    }
 
     if (res.eventDate) {
       const dateEl = document.getElementById('eventDateDisplay');
@@ -767,11 +935,17 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="gender-selector">
             <label class="gender-option">
               <input type="radio" name="adultGender_${currentId}" value="Male" checked>
-              <span class="gender-btn">Male</span>
+              <span class="gender-btn gender-male">
+                <span class="gender-indicator"></span>
+                <span>Male</span>
+              </span>
             </label>
             <label class="gender-option">
               <input type="radio" name="adultGender_${currentId}" value="Female">
-              <span class="gender-btn">Female</span>
+              <span class="gender-btn gender-female">
+                <span class="gender-indicator"></span>
+                <span>Female</span>
+              </span>
             </label>
           </div>
         </div>
@@ -828,11 +1002,17 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="gender-selector">
             <label class="gender-option">
               <input type="radio" name="childGender_${currentId}" value="Male" checked>
-              <span class="gender-btn">Male</span>
+              <span class="gender-btn gender-male">
+                <span class="gender-indicator"></span>
+                <span>Male</span>
+              </span>
             </label>
             <label class="gender-option">
               <input type="radio" name="childGender_${currentId}" value="Female">
-              <span class="gender-btn">Female</span>
+              <span class="gender-btn gender-female">
+                <span class="gender-indicator"></span>
+                <span>Female</span>
+              </span>
             </label>
           </div>
         </div>
@@ -1117,7 +1297,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         form.style.display = 'none';
-        regSuccess.style.display = 'flex';
+        regSuccess.classList.add('is-visible');
+        regSuccess.style.setProperty('display', 'flex', 'important');
 
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -1142,7 +1323,8 @@ document.addEventListener('DOMContentLoaded', () => {
       childCount = 0;
       const formHeadingGroup = document.querySelector('.form-heading-group');
       if (formHeadingGroup) formHeadingGroup.style.display = 'block';
-      regSuccess.style.display = 'none';
+      regSuccess.classList.remove('is-visible');
+      regSuccess.style.setProperty('display', 'none', 'important');
       form.style.display = 'flex';
       const nameInput = document.getElementById('fullName');
       if (nameInput) nameInput.focus();
